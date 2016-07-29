@@ -1,0 +1,216 @@
+<apex:page standardController="Account" extensions="FileRelatedListController" action="{!showFiles}" showHeader="false" sidebar="false" docType="html-5.0">
+    <apex:includeScript value="{!$Resource.jQuery}"/>
+    <script>
+    	var jQ=jQuery.noConflict();
+    	var clickButtons=function(id){
+				document.getElementById(id).click();
+            }
+        var uploadFile=function(fileobj,id,reasonf){
+            if(fileobj.value && fileobj.value.toString().trim().length>0){
+                document.body.click();
+                var reasonForChange=prompt('Enter a Reason for Change','New Version');
+                jQ(".reason").val(reasonForChange);
+                clickButtons(id);
+			}else{
+                alert('File name is empty');
+			}
+            
+		}
+        function showPrevious(ele,docId){
+            
+            jQ("tr."+docId).toggle();
+            var currText=jQ(ele).attr('title');
+            if(currText=="Show previous versions"){
+                jQ(ele).attr('title',"Hide previous versions");
+                jQ(ele).removeClass('historyclosed').addClass('historyopen');
+		   }
+           else{
+               jQ(ele).attr('title',"Show previous versions");
+               jQ(ele).removeClass('historyopen').addClass('historyclosed');
+			}
+		}
+   		
+    	
+    	
+    </script>
+    <style>
+        .filebutton{
+        	opacity: 0;
+        }
+        .centeralign{
+        	text-align: center;
+        }
+        thead th{
+        	font-size: 11px;
+        }
+        table.maintable > tbody > tr > td,table.versions td{
+        	border-bottom: 1px solid #e0ebeb;
+        }
+        
+        .bgbutton{
+        	display:inline-block;
+        	 background-repeat:no-repeat;
+   			background-size:contain;
+        	background-image: url('{!URLFOR($Resource.UploadButton)}') !important;
+        	float:center;
+        	width: 30px;
+        	height: 25px;
+        	vertical-align:middle;
+        	cursor: pointer;
+        }
+        
+        .downloadbutton{
+        	display:inline-block;
+        	background-repeat:no-repeat;
+   			background-size:contain;
+        	background-image: url('{!URLFOR($Resource.DownloadButton)}') !important;
+        	width: 30px;
+        	height: 25px;
+        	vertical-align:middle;
+        	cursor: pointer;
+        }
+        .previous{
+        	display:none;
+        	opacity: 0.95;
+        }
+        table{
+        	/*background: #cceeff;*/
+        	border: none;
+        	border-spacing: 0px;
+        }
+		
+		table tbody{
+        	background-color: #fff;
+		}
+        
+        table.versions > thead {
+        	line-height: 4;
+        }
+        
+        table.maintable > thead{
+        	line-height: 2;
+        }
+        
+        table.versions tr:nth-child(even), table.versions thead{
+        	/*background-color: #80d4ff;*/
+        	background-color: #f2f2f2;
+        }
+        
+        .history{
+        	width: 20px;
+            height: 20px;
+            display: block;
+            background-size: contain;
+        	cursor: pointer;
+        }
+        .historyopen{
+			background-image: url('{!URLFOR($Resource.folderopen_1)}') !important;
+        }
+        .historyclosed{
+			background-image: url('{!URLFOR($Resource.folderclosed_1)}') !important;
+        }
+    </style>
+    <apex:form >
+        <apex:pageBlock >
+            <apex:pageBlockButtons location="top">
+                <apex:outputPanel styleClass="uploader" title="Upload New File">
+                    <apex:commandLink value="Upload New File" action="{!saveNewFile}" id="uploadnew" style="display:none" />
+                    <apex:inputFile value="{!fileBody}" fileName="{!fileName}" title="Upload New Version" styleclass="filebutton"
+                                    contentType="{!fileContentType}" id="verUploadButton" style="display:none"
+                                    onchange="clickButtons('{!$Component.uploadnew}')"/>
+                    
+                    <apex:outputText styleclass="bgbutton" html-onclick="clickButtons('{!$Component.verUploadButton}')" >
+                        <h1>Upload New File  </h1>
+                    </apex:outputText> 
+                </apex:outputPanel>
+            </apex:pageBlockButtons>
+            <apex:pageMessages />
+            <apex:outputPanel id="filetable">
+                <table  width="100%" height="100%" class="maintable">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th>Title</th>
+                            <th class="centeralign">Version Number</th>
+                            <th>Reason for Change</th>
+                            <th>Document Uploaded By</th>
+                            <th>Document Upload Date</th>
+                            <th>Version Uploaded By</th>
+                            <th>Version Uploaded Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!theDocs}" var="theDoc">
+                            <tr>
+                                <td>
+                                    <apex:outputPanel styleClass="uploader">
+                                        <apex:inputHidden value="{!reasonForChange}" html-class="reason"/>
+                                        <apex:commandLink value="Upload New Version" action="{!saveNewFile}" id="uploadnew" style="display:none">
+                                            <apex:param name="docId" value="{!theDoc.Id}" />
+                                        </apex:commandLink>
+                                        <apex:inputFile value="{!fileBody}" fileName="{!fileName}" title="Upload New Version" styleclass="filebutton"
+                                                        contentType="{!fileContentType}" id="verUploadButton" style="display:none"
+                                                        onchange="uploadFile(this,'{!$Component.uploadnew}','{!$Component.reasonf}')"/>
+                                        <div class="bgbutton" title="Upload New Version" onclick="clickButtons('{!$Component.verUploadButton}')" >
+                                        </div> 
+                                    </apex:outputPanel>
+                                </td>
+                                <td>
+                                    <apex:outputPanel rendered="{!NOT(theDoc.LatestPublishedVersion.VersionNumber='1')}" title="Show previous versions"
+                                                      onclick="showPrevious(this,'{!theDoc.Id}')" styleclass="history historyclosed" />
+                                </td>
+                                <td>{!theDoc.Title}</td>
+                                <td class="centeralign">{!theDoc.LatestPublishedVersion.VersionNumber}</td>
+                                <td>{!theDoc.LatestPublishedVersion.ReasonForChange}</td>
+                                <td>{!theDoc.CreatedBy.Name}</td>
+                                <td><apex:outputField value="{!theDoc.CreatedDate}"/></td>
+                                <td>{!theDoc.LatestPublishedVersion.CreatedBy.Name}</td>
+                                <td><apex:outputField value="{!theDoc.LatestPublishedVersion.CreatedDate}"/></td>
+                                <td>
+                                    <apex:outputLink value="{!'/sfc/servlet.shepherd/version/download/'+theDoc.LatestPublishedVersionId+'?asPdf=false&operationContext=CHATTER'}">
+                                        <apex:outputText styleClass="downloadbutton" title="Download Latest Version"/>
+                                    </apex:outputLink>
+                                </td>
+                            </tr>
+                            <apex:outputPanel rendered="{!NOT(theDoc.LatestPublishedVersion.VersionNumber='1')}">
+                            <tr class="previous {!theDoc.Id} closed">
+                                <td ></td>
+                                <td></td>
+                            	<td colspan="7">
+                                    <table width="100%" class="versions">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th class="centeralign">Version Number</th>
+                                            <th>Reason For Change</th>
+                                            <th>Version Uploaded By</th>
+                                            <th>Version Uploaded Date</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!theDoc.ContentVersions}" var="version">
+                                            <tr>
+                                                <td>{!version.Title}</td>
+                                                <td class="centeralign">{!version.VersionNumber}</td>                                    
+                                                <td>{!version.ReasonForChange}</td>
+                                                <td>{!version.CreatedBy.Name}</td>
+                                                <td><apex:outputField value="{!version.CreatedDate}"/></td>
+                                                <td align="center">
+                                                    <apex:outputLink value="{!'/sfc/servlet.shepherd/version/download/'+version.Id+'?asPdf=false&operationContext=CHATTER'}">
+                                                        <apex:outputText styleClass="downloadbutton" title="Download this Version"/>
+                                                    </apex:outputLink>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+									</tbody></table> </td></tr>
+                            </apex:outputPanel>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
